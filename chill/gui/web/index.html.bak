@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1,
+                   maximum-scale=1,user-scalable=no">
+    <meta name="theme-color" content="#070a0f">
+    <title>ChillOS</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+<header class="topbar">
+
+    <button class="menu" onclick="toggleTools()">☰</button>
+
+    <div class="brand">
+        <strong>CHILLOS</strong>
+        <small id="device">Detecting device...</small>
+    </div>
+
+    <div class="online">●</div>
+
+</header>
+
+
+<main>
+
+<!-- HOME -->
+
+<section id="homeScreen">
+
+    <section class="hero">
+        <div class="hero-title">CHILLOS MOBILE</div>
+
+        <div id="profile">
+            Detecting profile...
+        </div>
+    </section>
+
+
+    <section class="status-grid">
+
+        <div class="status-card">
+            <small>NETWORK</small>
+            <strong id="networkStatus">...</strong>
+        </div>
+
+        <div class="status-card">
+            <small>PRoot</small>
+            <strong id="prootStatus">...</strong>
+        </div>
+
+        <div class="status-card">
+            <small>ARCH</small>
+            <strong id="archStatus">...</strong>
+        </div>
+
+        <div class="status-card">
+            <small>ROOT</small>
+            <strong id="rootStatus">...</strong>
+        </div>
+
+    </section>
+
+
+    <h2>QUICK ACTIONS</h2>
+
+    <div class="actions">
+
+        <button onclick="openTerminal()">
+            <span>▣</span>
+            <b>TERMINAL</b>
+            <small>Debian session</small>
+        </button>
+
+        <button onclick="openSniffer()">
+            <span>◉</span>
+            <b>SNIFFER</b>
+            <small>Network diagnostics</small>
+        </button>
+
+        <button onclick="showHardware()">
+            <span>◇</span>
+            <b>HARDWARE</b>
+            <small>Device visibility</small>
+        </button>
+
+        <button onclick="showCapabilities()">
+            <span>◆</span>
+            <b>CAPABILITIES</b>
+            <small>System access</small>
+        </button>
+
+    </div>
+
+
+    <h2>SYSTEM STATUS</h2>
+
+    <div id="capabilities"
+         class="capability-list">
+    </div>
+
+</section>
+
+
+<!-- SNIFFER -->
+
+<section id="snifferScreen"
+         class="screen hidden">
+
+    <div class="screen-title">
+
+        <button onclick="showHome()">‹</button>
+
+        <div>
+            <strong>SNIFFER</strong>
+            <small>Network diagnostics</small>
+        </div>
+
+        <span id="snifferState">●</span>
+
+    </div>
+
+
+    <div class="sniffer-hero">
+
+        <div class="radar">◎</div>
+
+        <div>
+            <strong>NETWORK VISIBILITY</strong>
+            <p id="snifferSummary">
+                Checking network access...
+            </p>
+        </div>
+
+    </div>
+
+
+    <h2>INTERFACES</h2>
+
+    <div id="interfaces"
+         class="sniffer-list">
+    </div>
+
+
+    <h2>NETWORK INFORMATION</h2>
+
+    <div id="networkInfo"
+         class="sniffer-list">
+    </div>
+
+
+    <h2>DIAGNOSTICS</h2>
+
+    <div class="actions">
+
+        <button onclick="refreshSniffer()">
+            <b>REFRESH</b>
+            <small>Re-scan environment</small>
+        </button>
+
+        <button onclick="runConnectivity()">
+            <b>CONNECTIVITY</b>
+            <small>Check network path</small>
+        </button>
+
+    </div>
+
+
+    <div id="snifferOutput"
+         class="terminal-output">
+        Sniffer ready.
+    </div>
+
+</section>
+
+
+<!-- HARDWARE -->
+
+<section id="hardwareScreen"
+         class="screen hidden">
+
+    <div class="screen-title">
+        <button onclick="showHome()">‹</button>
+
+        <div>
+            <strong>HARDWARE</strong>
+            <small>Android visibility</small>
+        </div>
+    </div>
+
+    <div id="hardware"
+         class="capability-list">
+    </div>
+
+</section>
+
+
+<!-- CAPABILITIES -->
+
+<section id="capabilityScreen"
+         class="screen hidden">
+
+    <div class="screen-title">
+        <button onclick="showHome()">‹</button>
+
+        <div>
+            <strong>CAPABILITIES</strong>
+            <small>ChillOS access matrix</small>
+        </div>
+    </div>
+
+    <div id="capabilitiesFull"
+         class="capability-list">
+    </div>
+
+</section>
+
+
+
+<section id="terminalScreen" class="screen terminal-screen hidden">
+
+    <div class="terminal-topbar">
+
+        <button onclick="showHome()">‹</button>
+
+        <div class="terminal-title">
+            <strong>CHILLOS TERMINAL</strong>
+            <small id="terminalStatus">Connecting...</small>
+        </div>
+
+        <button onclick="toggleTerminalFullscreen()"
+                id="fullscreenButton">
+            ⛶
+        </button>
+
+    </div>
+
+
+    <div id="terminalOutput"
+         class="terminal-window"
+         tabindex="0">
+        <span class="terminal-system">
+ChillOS Terminal
+Debian / PRoot session
+────────────────────────────
+        </span>
+    </div>
+
+
+    <div class="terminal-shortcuts">
+
+        <button onclick="terminalInsert('TAB')">
+            TAB
+        </button>
+
+        <button onclick="terminalInsert('CTRL+C')">
+            CTRL+C
+        </button>
+
+        <button onclick="terminalInsert('↑')">
+            ↑
+        </button>
+
+        <button onclick="terminalInsert('↓')">
+            ↓
+        </button>
+
+        <button onclick="terminalInsert('~')">
+            ~
+        </button>
+
+        <button onclick="terminalInsert('/')">
+            /
+        </button>
+
+    </div>
+
+
+    <div class="terminal-input">
+
+        <span class="terminal-prompt">$</span>
+
+        <input
+            id="terminalCommand"
+            type="text"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="none"
+            spellcheck="false"
+            enterkeyhint="send"
+            inputmode="text"
+            placeholder="command..."
+        >
+
+        <button
+            id="terminalRun"
+            onclick="sendTerminalCommand()">
+            ➤
+        </button>
+
+    </div>
+
+
+    <div class="terminal-history-indicator"
+         id="historyIndicator">
+        HISTORY: 0
+    </div>
+
+</section>
+
+</main>
+
+
+<!-- TOOL DRAWER -->
+
+<nav id="toolMenu" class="tool-menu">
+
+    <div class="tool-header">
+        <strong>TOOLS</strong>
+        <button onclick="toggleTools()">×</button>
+    </div>
+
+    <details open>
+
+        <summary>NETWORK</summary>
+
+        <button onclick="openSniffer()">
+            ◉ Sniffer
+        </button>
+
+        <button>
+            Scanner
+        </button>
+
+        <button>
+            DNS Tools
+        </button>
+
+    </details>
+
+
+    <details>
+
+        <summary>SYSTEM</summary>
+
+        <button onclick="showHardware()">
+            Hardware
+        </button>
+
+        <button onclick="showCapabilities()">
+            Capabilities
+        </button>
+
+        <button>
+            Processes
+        </button>
+
+    </details>
+
+
+    <details>
+
+        <summary>DEVELOPMENT</summary>
+
+        <button>
+            Python
+        </button>
+
+        <button>
+            Git
+        </button>
+
+    </details>
+
+</nav>
+
+
+<footer>
+
+<button onclick="showHome()">
+    <span>⌂</span>
+    HOME
+</button>
+
+<button onclick="toggleTools()">
+    <span>☰</span>
+    TOOLS
+</button>
+
+<button onclick="openTerminal()">
+    <span>▣</span>
+    TERMINAL
+</button>
+
+<button>
+    <span>⚙</span>
+    SETTINGS
+</button>
+
+</footer>
+
+
+<script src="/app.js"></script>
+
+</body>
+</html>

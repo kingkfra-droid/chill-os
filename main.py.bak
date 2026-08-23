@@ -1,0 +1,242 @@
+#!/usr/bin/env python3
+
+import argparse
+import platform
+import os
+
+VERSION = "0.1.0"
+
+
+def banner():
+    print(r"""
+   ██████╗██╗  ██╗██╗██╗     ██╗      ██████╗ ███████╗
+  ██╔════╝██║  ██║██║██║     ██║     ██╔═══██╗██╔════╝
+  ██║     ███████║██║██║     ██║     ██║   ██║███████╗
+  ██║     ██╔══██║██║██║     ██║     ██║   ██║╚════██║
+  ╚██████╗██║  ██║██║███████╗███████╗╚██████╔╝███████║
+   ╚═════╝╚═╝  ╚═╝╚═╝╚══════╝╚═════╝  ╚═════╝ ╚══════╝
+
+                 ChillOS 0.1.0
+          Linux environment for Android
+""")
+
+
+def doctor_cmd(args):
+    from chill.doctor import main
+    main()
+
+
+def start_cmd(args):
+    from chill.start import main
+    main()
+
+
+def status_cmd(args):
+    from chill.environment import status
+    status()
+
+
+def rootfs_cmd(args):
+    from chill.rootfs import main
+    main()
+
+
+def tool_cmd(args):
+    from chill.tools import main
+    return main(args.args)
+
+
+def system_cmd(args):
+    banner()
+    print(f"Architecture : {platform.machine()}")
+    print(f"Kernel       : {platform.release()}")
+    print(f"Python       : {platform.python_version()}")
+    print(
+        f"Termux       : "
+        f"{'YES' if 'com.termux' in os.environ.get('PREFIX', '') else 'NO'}"
+    )
+
+
+def version_cmd(args):
+    print(f"ChillOS {VERSION}")
+
+
+def build_parser():
+    parser = argparse.ArgumentParser(
+        prog="chill",
+        description="ChillOS — Linux environment for Android"
+    )
+
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {VERSION}"
+    )
+
+    commands = parser.add_subparsers(
+        dest="command",
+        metavar="COMMAND"
+    )
+
+    # doctor
+    p = commands.add_parser(
+        "doctor",
+        help="Check the Android/Termux environment"
+    )
+    p.set_defaults(func=doctor_cmd)
+
+    # start
+    p = commands.add_parser(
+        "start",
+        help="Start a ChillOS session"
+    )
+    p.set_defaults(func=start_cmd)
+
+    # status
+    p = commands.add_parser(
+        "status",
+        help="Show ChillOS environment status"
+    )
+    p.set_defaults(func=status_cmd)
+
+    # system
+    p = commands.add_parser(
+        "system",
+        help="Show system information"
+    )
+    p.set_defaults(func=system_cmd)
+
+    # version
+    p = commands.add_parser(
+        "version",
+        help="Show ChillOS version"
+    )
+    p.set_defaults(func=version_cmd)
+
+    # get
+    p = commands.add_parser(
+        "get",
+        help="Install a Linux package"
+    )
+    p.add_argument("package")
+    p.set_defaults(
+        func=lambda args: tool_cmd(
+            type("ToolArgs", (), {
+                "args": ["get", args.package]
+            })()
+        )
+    )
+
+    # tool
+    p = commands.add_parser(
+        "tool",
+        help="Manage Linux tools"
+    )
+
+    tool_commands = p.add_subparsers(
+        dest="tool_command",
+        metavar="COMMAND"
+    )
+
+    p_search = tool_commands.add_parser(
+        "search",
+        help="Search available Linux packages"
+    )
+    p_search.add_argument("query")
+    p_search.set_defaults(
+        func=lambda args: tool_cmd(
+            type("ToolArgs", (), {
+                "args": ["search", args.query]
+            })()
+        )
+    )
+
+    p_info = tool_commands.add_parser(
+        "info",
+        help="Show package information"
+    )
+    p_info.add_argument("package")
+    p_info.set_defaults(
+        func=lambda args: tool_cmd(
+            type("ToolArgs", (), {
+                "args": ["info", args.package]
+            })()
+        )
+    )
+
+    p_update = tool_commands.add_parser(
+        "update",
+        help="Update package metadata"
+    )
+    p_update.set_defaults(
+        func=lambda args: tool_cmd(
+            type("ToolArgs", (), {
+                "args": ["update"]
+            })()
+        )
+    )
+
+    p_remove = tool_commands.add_parser(
+        "remove",
+        help="Remove a Linux package"
+    )
+    p_remove.add_argument("package")
+    p_remove.set_defaults(
+        func=lambda args: tool_cmd(
+            type("ToolArgs", (), {
+                "args": ["remove", args.package]
+            })()
+        )
+    )
+
+    # gui
+    p = commands.add_parser(
+        "gui",
+        help="Start the ChillOS graphical dashboard"
+    )
+    p.set_defaults(
+        func=lambda args: __import__(
+            "chill.gui.command",
+            fromlist=["run"]
+        ).run()
+    )
+
+    # rootfs
+    p = commands.add_parser(
+        "rootfs",
+        help="Manage the ChillOS Linux root filesystem"
+    )
+
+    rootfs_commands = p.add_subparsers(
+        dest="rootfs_command",
+        metavar="COMMAND"
+    )
+
+    p_build = rootfs_commands.add_parser(
+        "build",
+        help="Build the ChillOS root filesystem"
+    )
+    p_build.set_defaults(func=rootfs_cmd)
+
+    p_status = rootfs_commands.add_parser(
+        "status",
+        help="Show root filesystem status"
+    )
+    p_status.set_defaults(func=rootfs_cmd)
+
+    return parser
+
+
+def main():
+    parser = build_parser()
+    args = parser.parse_args()
+
+    if not hasattr(args, "func"):
+        parser.print_help()
+        return 0
+
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main() or 0)

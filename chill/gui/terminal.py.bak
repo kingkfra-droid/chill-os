@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+
+import os
+import subprocess
+import threading
+
+
+class ChillTerminal:
+    def __init__(self):
+        self.process = None
+        self.lock = threading.Lock()
+
+    def start(self):
+        with self.lock:
+
+            if self.process is not None:
+                if self.process.poll() is None:
+                    return True
+
+            command = [
+                "proot-distro",
+                "login",
+                "debian",
+                "--",
+                "/bin/bash",
+                "--login"
+            ]
+
+            self.process = subprocess.Popen(
+                command,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1
+            )
+
+            return True
+
+    def running(self):
+        return (
+            self.process is not None
+            and self.process.poll() is None
+        )
+
+    def execute(self, command):
+
+        command = command.strip()
+
+        if not command:
+            return ""
+
+        self.start()
+
+        with self.lock:
+
+            try:
+
+                marker = "__CHILLOS_CMD_DONE__"
+
+                payload = (
+                    command +
+                    "\nprintf '\\n" +
+                    marker +
+                    "\\n'\n"
+                )
+
+                self.process.stdin.write(payload)
+                self.process.stdin.flush()
+
+                output = []
+
+                while True:
+
+                    line = self.process.stdout.readline()
+
+                    if not line:
+                        break
+
+                    if marker in line:
+                        break
+
+                    output.append(line)
+
+                return "".join(output)
+
+            except Exception as exc:
+
+                return "Terminal error: " + str(exc)
+
+    def stop(self):
+
+        with self.lock:
+
+            if self.process is not None:
+
+                if self.running():
+                    self.process.terminate()
+
+                self.process = None
+
+        return True
+
+
+terminal = ChillTerminal()

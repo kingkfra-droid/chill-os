@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width,initial-scale=1,
+                   maximum-scale=1,user-scalable=no">
+    <meta name="theme-color" content="#070a0f">
+    <title>ChillOS</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+<header class="topbar">
+
+    <button class="menu" onclick="toggleTools()">☰</button>
+
+    <div class="brand">
+        <strong>CHILLOS</strong>
+        <small id="device">Detecting device...</small>
+    </div>
+
+    <div class="online">●</div>
+
+</header>
+
+
+<main>
+
+<!-- HOME -->
+
+<section id="homeScreen">
+
+    <section class="hero">
+        <div class="hero-title">CHILLOS MOBILE</div>
+
+        <div id="profile">
+            Detecting profile...
+        </div>
+    </section>
+
+
+    <section class="status-grid">
+
+        <div class="status-card">
+            <small>NETWORK</small>
+            <strong id="networkStatus">...</strong>
+        </div>
+
+        <div class="status-card">
+            <small>PRoot</small>
+            <strong id="prootStatus">...</strong>
+        </div>
+
+        <div class="status-card">
+            <small>ARCH</small>
+            <strong id="archStatus">...</strong>
+        </div>
+
+        <div class="status-card">
+            <small>ROOT</small>
+            <strong id="rootStatus">...</strong>
+        </div>
+
+    </section>
+
+
+    <h2>QUICK ACTIONS</h2>
+
+    <div class="actions">
+
+        <button onclick="openTerminal()">
+            <span>▣</span>
+            <b>TERMINAL</b>
+            <small>Debian session</small>
+        </button>
+
+        <button onclick="openToolsManager()">
+            <span>⬇</span>
+            <b>GET TOOLS</b>
+            <small>Debian packages</small>
+        </button>
+
+        <button onclick="openSniffer()">
+            <span>◉</span>
+            <b>SNIFFER</b>
+            <small>Network diagnostics</small>
+        </button>
+
+        <button onclick="showHardware()">
+            <span>◇</span>
+            <b>HARDWARE</b>
+            <small>Device visibility</small>
+        </button>
+
+        <button onclick="showCapabilities()">
+            <span>◆</span>
+            <b>CAPABILITIES</b>
+            <small>System access</small>
+        </button>
+
+    </div>
+
+
+    <h2>SYSTEM STATUS</h2>
+
+    <div id="capabilities"
+         class="capability-list">
+    </div>
+
+</section>
+
+
+<!-- TOOLS MANAGER -->
+
+<section id="toolsScreen"
+         class="screen hidden">
+
+    <div class="screen-title">
+
+        <button onclick="showHome()">‹</button>
+
+        <div>
+            <strong>TOOLS</strong>
+            <small>Debian Linux package manager</small>
+        </div>
+
+        <button onclick="updateLinuxTools()">
+            ↻
+        </button>
+
+    </div>
+
+
+    <div class="tools-hero">
+
+        <div class="tools-icon">▣</div>
+
+        <div>
+            <strong>CHILLOS GET</strong>
+            <small>
+                Install Linux tools into the Debian session
+            </small>
+        </div>
+
+    </div>
+
+
+    <div class="tool-search-box">
+
+        <span>⌕</span>
+
+        <input
+            id="toolSearch"
+            type="search"
+            autocomplete="off"
+            autocapitalize="none"
+            spellcheck="false"
+            placeholder="Search Linux tools..."
+        >
+
+    </div>
+
+
+    <div class="tool-actions">
+
+        <button onclick="loadToolCategories()">
+            <span>▦</span>
+            CATEGORIES
+        </button>
+
+        <button onclick="updateLinuxTools()">
+            <span>↻</span>
+            UPDATE
+        </button>
+
+    </div>
+
+
+    <h2>CATEGORIES</h2>
+
+    <div id="toolCategories"
+         class="tool-category-grid">
+    </div>
+
+
+    <h2>PACKAGES</h2>
+
+    <div id="toolResults"
+         class="tool-results">
+
+        <div class="tool-loading">
+            Search for a Debian Linux package.
+        </div>
+
+    </div>
+
+
+    <div id="toolOutput"
+         class="tool-output">
+        Ready.
+    </div>
+
+</section>
+
+
+<!-- SNIFFER -->
+
+<section id="snifferScreen"
+         class="screen hidden">
+
+    <div class="screen-title">
+
+        <button onclick="showHome()">‹</button>
+
+        <div>
+            <strong>SNIFFER</strong>
+            <small>Live network telemetry</small>
+        </div>
+
+        <span id="snifferState">●</span>
+
+    </div>
+
+
+    <div class="sniffer-hero">
+
+        <div class="radar">◎</div>
+
+        <div>
+            <strong>NETWORK TELEMETRY</strong>
+
+            <p id="snifferSummary">
+                Initializing...
+            </p>
+        </div>
+
+    </div>
+
+
+    <div class="sniffer-dashboard">
+
+        <section class="sniffer-panel">
+
+            <div class="sniffer-panel-title">
+                <strong>INTERFACES</strong>
+                <small>Visible network devices</small>
+            </div>
+
+            <div id="interfaces"
+                 class="sniffer-list">
+            </div>
+
+        </section>
+
+
+        <section class="sniffer-panel">
+
+            <div class="sniffer-panel-title">
+                <strong>IP ADDRESSES</strong>
+                <small>IPv4 / IPv6</small>
+            </div>
+
+            <div id="snifferAddresses"
+                 class="sniffer-list">
+            </div>
+
+        </section>
+
+
+        <section class="sniffer-panel">
+
+            <div class="sniffer-panel-title">
+                <strong>ROUTES</strong>
+                <small>Routing table visibility</small>
+            </div>
+
+            <div id="snifferRoutes"
+                 class="sniffer-list">
+            </div>
+
+        </section>
+
+
+        <section class="sniffer-panel">
+
+            <div class="sniffer-panel-title">
+                <strong>DNS</strong>
+                <small>Resolver configuration</small>
+            </div>
+
+            <div id="snifferDNS"
+                 class="sniffer-list">
+            </div>
+
+        </section>
+
+
+        <section class="sniffer-panel">
+
+            <div class="sniffer-panel-title">
+                <strong>TRAFFIC COUNTERS</strong>
+                <small>Interface RX / TX telemetry</small>
+            </div>
+
+            <div id="snifferStatistics"
+                 class="sniffer-list">
+            </div>
+
+        </section>
+
+
+        <section class="sniffer-panel">
+
+            <div class="sniffer-panel-title">
+                <strong>SOCKETS</strong>
+                <small>TCP / UDP visibility</small>
+            </div>
+
+            <div id="snifferSockets"
+                 class="sniffer-list">
+            </div>
+
+        </section>
+
+
+        <section class="sniffer-panel">
+
+            <div class="sniffer-panel-title">
+                <strong>CAPABILITIES</strong>
+                <small>Android / PRoot access matrix</small>
+            </div>
+
+            <div id="snifferCapabilities"
+                 class="sniffer-capability-grid">
+            </div>
+
+        </section>
+
+
+        <section class="sniffer-panel">
+
+            <div class="sniffer-panel-title">
+                <strong>CONNECTIVITY</strong>
+                <small>Passive network tests</small>
+            </div>
+
+            <div id="snifferConnectivity"
+                 class="sniffer-data-grid">
+            </div>
+
+        </section>
+
+    </div>
+
+
+    <div class="actions">
+
+        <button onclick="refreshSnifferLive()">
+            <b>REFRESH</b>
+            <small>Update telemetry</small>
+        </button>
+
+    </div>
+
+
+    <div id="snifferOutput"
+         class="terminal-output">
+        Sniffer ready.
+    </div>
+
+    <h2>TRAFFIC MONITOR</h2>
+
+    <div class="sniffer-traffic-card">
+
+        <div class="traffic-header">
+            <strong id="trafficInterface">TRAFFIC</strong>
+            <span id="trafficState">● LIVE</span>
+        </div>
+
+        <div class="traffic-stats">
+
+            <div>
+                <small>RX</small>
+                <strong id="rxRate">0 B/s</strong>
+            </div>
+
+            <div>
+                <small>TX</small>
+                <strong id="txRate">0 B/s</strong>
+            </div>
+
+            <div>
+                <small>TOTAL RX</small>
+                <strong id="rxTotal">0 B</strong>
+            </div>
+
+            <div>
+                <small>TOTAL TX</small>
+                <strong id="txTotal">0 B</strong>
+            </div>
+
+        </div>
+
+        <div class="traffic-graph">
+            <canvas id="trafficGraph"></canvas>
+        </div>
+
+    </div>
+
+    <h2>PCAP CAPTURE</h2>
+
+    <div class="pcap-card">
+
+        <div class="pcap-status">
+
+            <div>
+                <strong>CAPTURE ENGINE</strong>
+                <small id="pcapStatus">
+                    Checking tcpdump...
+                </small>
+            </div>
+
+            <span id="pcapIndicator">○</span>
+
+        </div>
+
+        <label>
+            INTERFACE
+            <select id="pcapInterface"></select>
+        </label>
+
+        <label>
+            DURATION
+            <select id="pcapDuration">
+
+                <option value="10">
+                    10 seconds
+                </option>
+
+                <option value="30" selected>
+                    30 seconds
+                </option>
+
+                <option value="60">
+                    60 seconds
+                </option>
+
+            </select>
+        </label>
+
+        <button
+            id="pcapStart"
+            class="pcap-button"
+            onclick="startPcapCapture()">
+
+            START PCAP
+
+        </button>
+
+        <div id="pcapOutput"
+             class="terminal-output">
+
+            Capture ready.
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- HARDWARE -->
+
+<section id="hardwareScreen"
+         class="screen hidden">
+
+    <div class="screen-title">
+        <button onclick="showHome()">‹</button>
+
+        <div>
+            <strong>HARDWARE</strong>
+            <small>Android visibility</small>
+        </div>
+    </div>
+
+    <div id="hardware"
+         class="capability-list">
+    </div>
+
+</section>
+
+
+<!-- CAPABILITIES -->
+
+<section id="capabilityScreen"
+         class="screen hidden">
+
+    <div class="screen-title">
+        <button onclick="showHome()">‹</button>
+
+        <div>
+            <strong>CAPABILITIES</strong>
+            <small>ChillOS access matrix</small>
+        </div>
+    </div>
+
+    <div id="capabilitiesFull"
+         class="capability-list">
+    </div>
+
+</section>
+
+
+
+<section id="terminalScreen" class="screen terminal-screen hidden">
+
+    <div class="terminal-topbar">
+
+        <button onclick="showHome()">‹</button>
+
+        <div class="terminal-title">
+            <strong>CHILLOS TERMINAL</strong>
+            <small id="terminalStatus">Connecting...</small>
+        </div>
+
+        <button onclick="toggleTerminalFullscreen()"
+                id="fullscreenButton">
+            ⛶
+        </button>
+
+    </div>
+
+
+    <div id="terminalOutput"
+         class="terminal-window"
+         tabindex="0">
+        <span class="terminal-system">
+ChillOS Terminal
+Debian / PRoot session
+────────────────────────────
+        </span>
+    </div>
+
+
+    <div class="terminal-shortcuts">
+
+        <button onclick="terminalInsert('TAB')">
+            TAB
+        </button>
+
+        <button onclick="terminalInsert('CTRL+C')">
+            CTRL+C
+        </button>
+
+        <button onclick="terminalInsert('↑')">
+            ↑
+        </button>
+
+        <button onclick="terminalInsert('↓')">
+            ↓
+        </button>
+
+        <button onclick="terminalInsert('~')">
+            ~
+        </button>
+
+        <button onclick="terminalInsert('/')">
+            /
+        </button>
+
+    </div>
+
+
+    <div class="terminal-input">
+
+        <span class="terminal-prompt">$</span>
+
+        <input
+            id="terminalCommand"
+            type="text"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="none"
+            spellcheck="false"
+            enterkeyhint="send"
+            inputmode="text"
+            placeholder="command..."
+        >
+
+        <button
+            id="terminalRun"
+            onclick="sendTerminalCommand()">
+            ➤
+        </button>
+
+    </div>
+
+
+    <div class="terminal-history-indicator"
+         id="historyIndicator">
+        HISTORY: 0
+    </div>
+
+</section>
+
+</main>
+
+
+<!-- TOOL DRAWER -->
+
+<nav id="toolMenu" class="tool-menu">
+
+    <div class="tool-header">
+        <div>
+            <strong>CHILLOS TOOLS</strong>
+            <small>Linux capability catalog</small>
+        </div>
+
+        <button onclick="toggleTools()">×</button>
+    </div>
+
+
+    <button class="drawer-main-action"
+            onclick="openToolsManager()">
+        <span>⬇</span>
+        <div>
+            <strong>GET LINUX TOOLS</strong>
+            <small>Debian APT</small>
+        </div>
+    </button>
+
+
+    <details open>
+        <summary>NETWORK</summary>
+
+        <button onclick="openSniffer()">
+            ◉ Sniffer
+        </button>
+
+        <button onclick="openToolsManager(); loadToolCategory('network')">
+            Scanner & Network Tools
+        </button>
+
+        <button onclick="openToolsManager(); loadToolCategory('dns')">
+            DNS Tools
+        </button>
+    </details>
+
+
+    <details>
+        <summary>INFORMATION GATHERING</summary>
+
+        <button onclick="openToolsManager(); loadToolCategory('information gathering')">
+            Reconnaissance
+        </button>
+
+        <button onclick="openToolsManager(); loadToolCategory('osint')">
+            OSINT
+        </button>
+    </details>
+
+
+    <details>
+        <summary>WEB</summary>
+
+        <button onclick="openToolsManager(); loadToolCategory('web')">
+            Web Tools
+        </button>
+
+        <button onclick="openToolsManager(); loadToolCategory('http')">
+            HTTP Tools
+        </button>
+    </details>
+
+
+    <details>
+        <summary>WIRELESS</summary>
+
+        <button onclick="openToolsManager(); loadToolCategory('wireless')">
+            Wireless Utilities
+        </button>
+
+        <button onclick="openToolsManager(); loadToolCategory('wifi')">
+            Wi-Fi Utilities
+        </button>
+    </details>
+
+
+    <details>
+        <summary>FORENSICS</summary>
+
+        <button onclick="openToolsManager(); loadToolCategory('forensics')">
+            Forensics
+        </button>
+
+        <button onclick="openToolsManager(); loadToolCategory('disk')">
+            Disk & Filesystem
+        </button>
+    </details>
+
+
+    <details>
+        <summary>DEVELOPMENT</summary>
+
+        <button onclick="openToolsManager(); loadToolCategory('development')">
+            Development
+        </button>
+
+        <button onclick="openToolsManager(); loadToolCategory('python')">
+            Python
+        </button>
+
+        <button onclick="openToolsManager(); loadToolCategory('git')">
+            Git
+        </button>
+    </details>
+
+
+    <details>
+        <summary>SYSTEM</summary>
+
+        <button onclick="showHardware()">
+            Hardware
+        </button>
+
+        <button onclick="showCapabilities()">
+            Capabilities
+        </button>
+
+        <button onclick="openToolsManager(); loadToolCategory('system')">
+            System Utilities
+        </button>
+    </details>
+
+
+    <div class="drawer-footer">
+        <small>
+            Packages are installed inside the
+            ChillOS Debian userspace.
+        </small>
+    </div>
+
+</nav>
+
+
+<footer>
+
+<button onclick="showHome()">
+    <span>⌂</span>
+    HOME
+</button>
+
+<button onclick="openToolsManager()">
+    <span>▦</span>
+    TOOLS
+</button>
+
+<button onclick="openTerminal()">
+    <span>▣</span>
+    TERMINAL
+</button>
+
+<button>
+    <span>⚙</span>
+    SETTINGS
+</button>
+
+</footer>
+
+
+<script src="/app.js"></script>
+
+</body>
+</html>
+
+<!-- TOOL DETAILS -->
+
+<section id="toolDetailsScreen" class="screen hidden">
+
+    <div class="screen-title">
+
+        <button onclick="openToolsManager()">‹</button>
+
+        <div>
+            <strong id="toolDetailsName">TOOL</strong>
+            <small id="toolDetailsStatus">Checking...</small>
+        </div>
+
+    </div>
+
+    <div class="tool-details-card">
+
+        <div class="tool-details-icon" id="toolDetailsIcon">
+            ◈
+        </div>
+
+        <div class="tool-details-main">
+
+            <strong id="toolDetailsPackage">
+                package
+            </strong>
+
+            <span id="toolDetailsBadge"
+                  class="tool-badge">
+                UNKNOWN
+            </span>
+
+        </div>
+
+        <p id="toolDetailsDescription">
+            Loading tool information...
+        </p>
+
+        <div class="tool-details-actions">
+
+            <button id="toolDetailsGet"
+                    onclick="getSelectedTool()">
+                GET
+            </button>
+
+            <button id="toolDetailsRemove"
+                    onclick="removeSelectedTool()">
+                REMOVE
+            </button>
+
+        </div>
+
+        <div id="toolDetailsOutput"
+             class="terminal-output">
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- FIRST RUN SETUP -->
+
+<section id="setupScreen" class="screen hidden">
+
+    <div class="setup-header">
+
+        <div class="setup-logo">
+            ◈
+        </div>
+
+        <div>
+            <strong>CHILLOS SETUP</strong>
+            <small>Android Linux environment</small>
+        </div>
+
+    </div>
+
+    <div class="setup-card">
+
+        <div id="setupIndicator"
+             class="setup-indicator">
+            ◌
+        </div>
+
+        <h1 id="setupTitle">
+            Checking environment
+        </h1>
+
+        <p id="setupMessage">
+            Detecting PRoot and Debian...
+        </p>
+
+    </div>
+
+
+    <div class="setup-checks">
+
+        <div class="setup-check">
+
+            <span id="prootCheck">○</span>
+
+            <div>
+                <strong>PRoot-Distro</strong>
+                <small id="prootCheckText">
+                    Checking...
+                </small>
+            </div>
+
+        </div>
+
+
+        <div class="setup-check">
+
+            <span id="debianCheck">○</span>
+
+            <div>
+                <strong>Debian</strong>
+                <small id="debianCheckText">
+                    Checking...
+                </small>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div id="setupCommands"
+         class="setup-commands hidden">
+
+        <h2>SETUP IN TERMUX</h2>
+
+        <p>
+            Run these commands in Termux, then return here
+            and press CHECK AGAIN.
+        </p>
+
+        <div class="setup-command">
+            <code>pkg install proot-distro -y</code>
+        </div>
+
+        <div class="setup-command">
+            <code>proot-distro install debian</code>
+        </div>
+
+        <div class="setup-command">
+            <code>proot-distro login debian -- cat /etc/os-release</code>
+        </div>
+
+    </div>
+
+
+    <button id="setupAction"
+            class="setup-primary"
+            onclick="checkSetup()">
+        CHECK AGAIN
+    </button>
+
+
+    <button id="setupContinue"
+            class="setup-secondary hidden"
+            onclick="finishSetup()">
+        ENTER CHILLOS
+    </button>
+
+    <button class="setup-secondary"
+            onclick="repairEnvironment()">
+        REPAIR ENVIRONMENT
+    </button>
+
+</section>
+
