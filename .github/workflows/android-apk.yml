@@ -1,17 +1,17 @@
-name: Build ChillOS APK
+name: Build and Release ChillOS APK
 
 on:
   push:
     branches:
-      - '**'
+      - main
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  build-apk:
-    name: Build Debug APK
+  build-release:
+    name: Build and Release APK
     runs-on: ubuntu-latest
 
     defaults:
@@ -38,18 +38,30 @@ jobs:
             "build-tools;34.0.0"
         working-directory: .
 
-      - name: Set up Gradle 8.7
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: '8.7'
 
-      - name: Build debug APK
+      - name: Build ChillOS APK
         run: gradle assembleDebug --no-daemon
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Prepare APK
+        run: |
+          mkdir -p release
+          cp app/build/outputs/apk/debug/*.apk release/ChillOS-debug.apk
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: ChillOS-debug-apk
-          path: android/ChillOS/app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-          retention-days: 30
+          tag_name: "build-${{ github.run_number }}"
+          name: "ChillOS Build ${{ github.run_number }}"
+          body: |
+            ## ChillOS APK
+
+            Automatic build from commit:
+            `${{ github.sha }}`
+
+            This is an automatically generated debug APK.
+          files: android/ChillOS/release/ChillOS-debug.apk
+          generate_release_notes: true
