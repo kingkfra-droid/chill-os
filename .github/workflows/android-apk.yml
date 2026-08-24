@@ -43,25 +43,76 @@ jobs:
         with:
           gradle-version: '8.7'
 
+      - name: Read Android version
+        id: version
+        run: |
+          VERSION_NAME=$(grep -oP 'versionName\s*[= ]\s*["'\'']\K[^"'\'']+' app/build.gradle app/build.gradle.kts 2>/dev/null | head -1 || true)
+
+          if [ -z "$VERSION_NAME" ]; then
+            VERSION_NAME="0.1.0"
+          fi
+
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "Detected ChillOS version: $VERSION_NAME"
+
       - name: Build ChillOS APK
         run: gradle assembleDebug --no-daemon
 
-      - name: Prepare APK
+      - name: Version APK
+        id: apk
         run: |
+          VERSION="${{ steps.version.outputs.version_name }}"
+          BUILD="${{ github.run_number }}"
+
+          APK_NAME="ChillOS-v${VERSION}-build.${BUILD}.apk"
+
           mkdir -p release
-          cp app/build/outputs/apk/debug/*.apk release/ChillOS-debug.apk
+
+          APK_SOURCE=$(find app/build/outputs/apk/debug -type f -name "*.apk" | head -1)
+
+          if [ -z "$APK_SOURCE" ]; then
+            echo "ERROR: APK was not generated."
+            exit 1
+          fi
+
+          cp "$APK_SOURCE" "release/$APK_NAME"
+
+          echo "apk_name=$APK_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Generate SHA-256 checksum
+        run: |
+          cd release
+          sha256sum "${{ steps.apk.outputs.apk_name }}" \
+            > "${{ steps.apk.outputs.apk_name }}.sha256"
+
+          echo "SHA-256:"
+          cat "${{ steps.apk.outputs.apk_name }}.sha256"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "build-${{ github.run_number }}"
-          name: "ChillOS Build ${{ github.run_number }}"
+          tag_name: "v${{ steps.version.outputs.version_name }}-build.${{ github.run_number }}"
+          name: "ChillOS v${{ steps.version.outputs.version_name }} — Build ${{ github.run_number }}"
           body: |
-            ## ChillOS APK
+            # ChillOS APK
 
-            Automatic build from commit:
-            `${{ github.sha }}`
+            **Version:** ${{ steps.version.outputs.version_name }}
+            **Build:** ${{ github.run_number }}
+            **Commit:** `${{ github.sha }}`
 
-            This is an automatically generated debug APK.
-          files: android/ChillOS/release/ChillOS-debug.apk
+            ## Files
+
+            - Versioned debug APK
+            - SHA-256 checksum
+
+            ## Verification
+
+            ```bash
+            sha256sum -c *.sha256
+            ```
+
+            This is an automatically generated debug build.
+          files: |
+            android/ChillOS/release/${{ steps.apk.outputs.apk_name }}
+            android/ChillOS/release/${{ steps.apk.outputs.apk_name }}.sha256
           generate_release_notes: true
