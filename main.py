@@ -1,309 +1,274 @@
 #!/usr/bin/env python3
 
 import argparse
-import platform
-import os
+import sys
+
+from chill import architecture
+from chill import doctor
+from chill import environment
+from chill import rootfs
+from chill import start
+from chill import tools
+
 
 VERSION = "0.1.0"
 
 
-def banner():
-    print(r"""
-   ██████╗██╗  ██╗██╗██╗     ██╗      ██████╗ ███████╗
-  ██╔════╝██║  ██║██║██║     ██║     ██╔═══██╗██╔════╝
-  ██║     ███████║██║██║     ██║     ██║   ██║███████╗
-  ██║     ██╔══██║██║██║     ██║     ██║   ██║╚════██║
-  ╚██████╗██║  ██║██║███████╗███████╗╚██████╔╝███████║
-   ╚═════╝╚═╝  ╚═╝╚═╝╚══════╝╚═════╝  ╚═════╝ ╚══════╝
-
-                 ChillOS 0.1.0
-          Linux environment for Android
-""")
-
-
-def doctor_cmd(args):
-    from chill.doctor import main
-    main()
-
-
-def start_cmd(args):
-    from chill.start import main
-    main()
-
-
-def status_cmd(args):
-    from chill.environment import status
-    status()
-
-
-def rootfs_cmd(args):
-    from chill.rootfs import main
-    main()
-
-
-def tool_cmd(args):
-    from chill.tools import main
-    return main(args)
-
-
-def system_cmd(args):
-    banner()
-
-    print(f"Architecture : {platform.machine()}")
-    print(f"Kernel       : {platform.release()}")
-    print(f"Python       : {platform.python_version()}")
-
-    print(
-        "Termux       : "
-        f"{'YES' if 'com.termux' in os.environ.get('PREFIX', '') else 'NO'}"
-    )
-
-
-def version_cmd(args):
-    print(f"ChillOS {VERSION}")
-
-
 def build_parser():
-
     parser = argparse.ArgumentParser(
         prog="chill",
-        description="ChillOS — Linux environment for Android"
+        description="ChillOS — Linux environment for Android.",
     )
 
     parser.add_argument(
         "--version",
         action="version",
-        version=f"%(prog)s {VERSION}"
+        version=f"ChillOS {VERSION}",
     )
 
-    commands = parser.add_subparsers(
+    subparsers = parser.add_subparsers(
         dest="command",
-        metavar="COMMAND"
-    )
-
-    # doctor
-
-    p = commands.add_parser(
-        "doctor",
-        help="Check the Android/Termux environment"
-    )
-
-    p.set_defaults(
-        func=doctor_cmd
+        metavar="COMMAND",
     )
 
     # start
-
-    p = commands.add_parser(
+    start_parser = subparsers.add_parser(
         "start",
-        help="Start a ChillOS session"
+        help="Start a ChillOS session.",
     )
 
-    p.set_defaults(
-        func=start_cmd
+    start_parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Check the environment without starting it.",
+    )
+
+    # doctor
+    subparsers.add_parser(
+        "doctor",
+        help="Run ChillOS diagnostics.",
     )
 
     # status
-
-    p = commands.add_parser(
+    subparsers.add_parser(
         "status",
-        help="Show ChillOS environment status"
-    )
-
-    p.set_defaults(
-        func=status_cmd
+        help="Show ChillOS environment status.",
     )
 
     # system
-
-    p = commands.add_parser(
+    subparsers.add_parser(
         "system",
-        help="Show system information"
-    )
-
-    p.set_defaults(
-        func=system_cmd
+        help="Show system and architecture information.",
     )
 
     # version
-
-    p = commands.add_parser(
+    subparsers.add_parser(
         "version",
-        help="Show ChillOS version"
+        help="Show the ChillOS version.",
     )
 
-    p.set_defaults(
-        func=version_cmd
-    )
-
-    # GET
-
-    p = commands.add_parser(
+    # get
+    get_parser = subparsers.add_parser(
         "get",
-        help="Install Linux packages into ChillOS"
+        help="Install a package.",
     )
 
-    p.add_argument(
+    get_parser.add_argument(
         "package",
-        nargs="+",
-        help="Package name(s)"
+        help="Package name.",
     )
 
-    def get_cmd(args):
-
-        return tool_cmd(
-            [
-                "get",
-                *args.package
-            ]
-        )
-
-    p.set_defaults(
-        func=get_cmd
-    )
-
-    # TOOL
-
-    p = commands.add_parser(
+    # tool
+    tool_parser = subparsers.add_parser(
         "tool",
-        help="Manage Linux tools"
+        help="Manage ChillOS tools.",
     )
 
-    tool_commands = p.add_subparsers(
+    tool_subparsers = tool_parser.add_subparsers(
         dest="tool_command",
-        metavar="COMMAND"
+        metavar="COMMAND",
     )
 
-    # tool search
-
-    p_search = tool_commands.add_parser(
+    tool_search = tool_subparsers.add_parser(
         "search",
-        help="Search available Linux packages"
+        help="Search the tool catalogue.",
     )
 
-    p_search.add_argument(
-        "query"
+    tool_search.add_argument(
+        "query",
+        help="Search query.",
     )
 
-    p_search.set_defaults(
-        func=lambda args:
-            tool_cmd(
-                [
-                    "search",
-                    args.query
-                ]
-            )
-    )
-
-    # tool info
-
-    p_info = tool_commands.add_parser(
+    tool_info = tool_subparsers.add_parser(
         "info",
-        help="Show package information"
+        help="Show package/tool information.",
     )
 
-    p_info.add_argument(
-        "package"
+    tool_info.add_argument(
+        "package",
+        help="Package name.",
     )
 
-    p_info.set_defaults(
-        func=lambda args:
-            tool_cmd(
-                [
-                    "info",
-                    args.package
-                ]
-            )
-    )
-
-    # tool update
-
-    p_update = tool_commands.add_parser(
+    tool_subparsers.add_parser(
         "update",
-        help="Update package metadata"
+        help="Update tool/package metadata.",
     )
 
-    p_update.set_defaults(
-        func=lambda args:
-            tool_cmd(
-                [
-                    "update"
-                ]
-            )
-    )
-
-    # tool remove
-
-    p_remove = tool_commands.add_parser(
+    tool_remove = tool_subparsers.add_parser(
         "remove",
-        help="Remove a Linux package"
+        help="Remove a package.",
     )
 
-    p_remove.add_argument(
-        "package"
+    tool_remove.add_argument(
+        "package",
+        help="Package name.",
     )
 
-    p_remove.set_defaults(
-        func=lambda args:
-            tool_cmd(
-                [
-                    "remove",
-                    args.package
-                ]
-            )
-    )
-
-    # ROOTFS
-
-    p = commands.add_parser(
+    # rootfs
+    rootfs_parser = subparsers.add_parser(
         "rootfs",
-        help="Manage the ChillOS Linux root filesystem"
+        help="Manage the ChillOS Debian RootFS.",
     )
 
-    rootfs_commands = p.add_subparsers(
+    rootfs_subparsers = rootfs_parser.add_subparsers(
         dest="rootfs_command",
-        metavar="COMMAND"
+        metavar="COMMAND",
     )
 
-    # rootfs build
-
-    p_build = rootfs_commands.add_parser(
+    rootfs_subparsers.add_parser(
         "build",
-        help="Build the ChillOS root filesystem"
+        help="Install/build the Debian RootFS.",
     )
 
-    p_build.set_defaults(
-        func=rootfs_cmd
-    )
-
-    # rootfs status
-
-    p_status = rootfs_commands.add_parser(
+    rootfs_subparsers.add_parser(
         "status",
-        help="Show root filesystem status"
+        help="Show RootFS status.",
     )
 
-    p_status.set_defaults(
-        func=rootfs_cmd
+    rootfs_subparsers.add_parser(
+        "update",
+        help="Update Debian package metadata.",
+    )
+
+    rootfs_subparsers.add_parser(
+        "login",
+        help="Enter the Debian RootFS.",
+    )
+
+    rootfs_subparsers.add_parser(
+        "remove",
+        help="Show safe RootFS removal information.",
     )
 
     return parser
 
 
-def main():
+def command_get(package):
+    """Install a package through the ChillOS tool/package layer."""
 
+    if hasattr(tools, "install"):
+        return tools.install(package)
+
+    if hasattr(tools, "get"):
+        return tools.get(package)
+
+    print(
+        "Package installation is not available "
+        "in the current tools module."
+    )
+
+    return 1
+
+
+def command_tool(args):
+    """Dispatch tool commands."""
+
+    command = args.tool_command
+
+    if command == "search":
+        if hasattr(tools, "search"):
+            return tools.search(args.query)
+
+        print("Tool search is not available.")
+        return 1
+
+    if command == "info":
+        if hasattr(tools, "info"):
+            return tools.info(args.package)
+
+        print("Tool information is not available.")
+        return 1
+
+    if command == "update":
+        if hasattr(tools, "update"):
+            return tools.update()
+
+        print("Tool update is not available.")
+        return 1
+
+    if command == "remove":
+        if hasattr(tools, "remove"):
+            return tools.remove(args.package)
+
+        print("Tool removal is not available.")
+        return 1
+
+    print("Usage: chill tool {search,info,update,remove}")
+    return 1
+
+
+def command_rootfs(args):
+    """Dispatch RootFS commands through rootfs.main()."""
+
+    command = args.rootfs_command
+
+    if command is None:
+        return rootfs.main(["status"])
+
+    return rootfs.main([command])
+
+
+def main(argv=None):
     parser = build_parser()
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
-    if not hasattr(args, "func"):
+    if args.command is None:
         parser.print_help()
         return 0
 
-    return args.func(args)
+    if args.command == "version":
+        print(f"ChillOS {VERSION}")
+        return 0
+
+    if args.command == "status":
+        environment.status()
+        return 0
+
+    if args.command == "doctor":
+        return doctor.main()
+
+    if args.command == "system":
+        return architecture.report()
+
+    if args.command == "start":
+        if args.check:
+            return start.check_only()
+
+        return start.start()
+
+    if args.command == "rootfs":
+        return command_rootfs(args)
+
+    if args.command == "get":
+        return command_get(args.package)
+
+    if args.command == "tool":
+        return command_tool(args)
+
+    parser.print_help()
+    return 1
 
 
 if __name__ == "__main__":
-    raise SystemExit(
-        main() or 0
-    )
+    raise SystemExit(main())

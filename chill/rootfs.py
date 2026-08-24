@@ -1,26 +1,104 @@
 #!/usr/bin/env python3
 
+import os
+import platform
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 
-from .architecture import detect
 
 DISTRO = "debian"
+CHILLOS_HOME = Path.home() / ".chillos"
+ROOTFS_DIR = CHILLOS_HOME / "rootfs"
 
 
-def check_proot_distro():
-    return shutil.which("proot-distro") is not None
+def command_exists(command):
+    return shutil.which(command) is not None
 
 
-def container_exists():
-    """
-    Verify the container by asking proot-distro to enter it.
-    We do NOT parse `proot-distro list`.
-    """
+def run(command, timeout=30):
+    try:
+        return subprocess.run(
+            command,
+            text=True,
+            capture_output=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        return None
+    except Exception:
+        return None
+
+
+def architecture():
+    machine = platform.machine().lower()
+
+    mapping = {
+        "aarch64": "arm64",
+        "arm64": "arm64",
+        "x86_64": "amd64",
+        "amd64": "amd64",
+        "armv8l": "arm64",
+        "armv7l": "arm",
+        "arm": "arm",
+        "i386": "i386",
+        "i686": "i386",
+    }
+
+    return mapping.get(machine, machine)
+
+
+def proot_available():
+    return (
+        command_exists("proot")
+        or command_exists("proot-distro")
+    )
+
+
+def proot_distro_available():
+    return command_exists("proot-distro")
+
+
+def ensure_directories():
+    CHILLOS_HOME.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    ROOTFS_DIR.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+
+def distro_list():
+    if not proot_distro_available():
+        return []
+
+    result = run(
+        ["proot-distro", "list"],
+        timeout=10,
+    )
+
+    if result is None:
+        return []
+
+    return result.stdout.splitlines()
+
+
+def distro_installed():
+    lines = distro_list()
+
+    for line in lines:
+        normalized = line.lower()
+
+        if DISTRO in normalized:
+            if "installed" in normalized:
+                return True
 
     try:
-        result = subprocess.run(
+        result = run(
             [
                 "proot-distro",
                 "login",
@@ -28,130 +106,279 @@ def container_exists():
                 "--",
                 "true",
             ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
             timeout=15,
         )
 
-        return result.returncode == 0
+        return (
+            result is not None
+            and result.returncode == 0
+        )
 
     except Exception:
         return False
 
 
-def target_arch():
-    return detect()["target"]
+def rootfs_ready():
+    if not proot_distro_available():
+        return False
+
+    if not distro_installed():
+        return False
+
+    result = run(
+        [
+            "proot-distro",
+            "login",
+            DISTRO,
+            "--",
+            "sh",
+            "-c",
+            "test -f /etc/debian_version",
+        ],
+        timeout=15,
+    )
+
+    return (
+        result is not None
+        and result.returncode == 0
+    )
+
+
+def install():
+    ensure_directories()
+
+    if not proot_distro_available():
+        print("ERROR: proot-distro is not installed.")
+        print()
+        print("Install it with:")
+        print("  pkg install proot-distro")
+        return False
+
+    if distro_installed():
+        print("ChillOS RootFS is already installed.")
+        return True
+
+    print()
+    print("╔════════════════════════════════════════╗")
+    print("║         CHILLOS ROOTFS INSTALL         ║")
+    print("╚════════════════════════════════════════╝")
+    print()
+
+    print(f"Distribution : {DISTRO}")
+    print(f"Architecture : {architecture()}")
+    print()
+
+    print("Installing Debian through proot-distro...")
+    print()
+
+    result = run(
+        [
+            "proot-distro",
+            "install",
+            DISTRO,
+        ],
+        timeout=1800,
+    )
+
+    if result is None:
+        print("ERROR: RootFS installation timed out.")
+        return False
+
+    if result.returncode != 0:
+        print("ERROR: RootFS installation failed.")
+
+        if result.stderr:
+            print()
+            print(result.stderr.strip())
+
+        return False
+
+    print()
+    print("Debian RootFS installed successfully.")
+    return True
 
 
 def build():
-    target = target_arch()
+    return install()
 
-    print()
-    print("CHILLOS ROOTFS")
-    print("=" * 40)
-    print(f"Distribution : Debian 13")
-    print(f"Target       : {target}")
-    print(f"Backend      : PRoot")
-    print()
 
-    if not check_proot_distro():
+def update():
+    if not proot_distro_available():
         print("ERROR: proot-distro is not installed.")
-        print()
-        print("Install with:")
-        print("  pkg install proot-distro")
-        return 1
+        return False
 
-    if target == "unknown":
-        print("ERROR: Unsupported ChillOS architecture.")
-        return 1
-
-    print("Checking existing Debian container...")
-
-    if container_exists():
-        print()
-        print("Debian container: FOUND")
-        print("No installation required.")
-        print()
-        print("ChillOS rootfs: READY")
-        print(f"Architecture: {target}")
-        return 0
+    if not distro_installed():
+        print("RootFS is not installed.")
+        print("Run: chill rootfs build")
+        return False
 
     print()
-    print("Debian container: NOT FOUND")
-    print("Installing Debian...")
+    print("Updating Debian package metadata...")
     print()
 
-    result = subprocess.run(
-        ["proot-distro", "install", DISTRO]
+    result = run(
+        [
+            "proot-distro",
+            "login",
+            DISTRO,
+            "--",
+            "apt-get",
+            "update",
+        ],
+        timeout=600,
     )
 
+    if result is None:
+        print("ERROR: RootFS update timed out.")
+        return False
+
     if result.returncode != 0:
-        print()
-        print("ERROR: Debian installation failed.")
-        return result.returncode
+        print("ERROR: RootFS update failed.")
+
+        if result.stderr:
+            print(result.stderr.strip())
+
+        return False
 
     print()
-    print("Debian installation complete.")
-    print(f"ChillOS architecture: {target}")
+    print("RootFS package metadata updated.")
+    return True
 
-    return 0
+
+def login():
+    if not proot_distro_available():
+        print("ERROR: proot-distro is not installed.")
+        return False
+
+    if not distro_installed():
+        print("RootFS is not installed.")
+        print("Run: chill rootfs build")
+        return False
+
+    print("Starting ChillOS Debian environment...")
+
+    result = subprocess.run(
+        [
+            "proot-distro",
+            "login",
+            DISTRO,
+        ]
+    )
+
+    return result.returncode == 0
 
 
 def status():
-    info = detect()
+    ensure_directories()
 
     print()
-    print("CHILLOS ROOTFS")
-    print("=" * 40)
-    print(f"CPU capability : {info['cpu_capability']}")
-    print(f"Android ABI    : {info['android_abi']}")
-    print(f"Userspace      : {info['userspace']}")
-    print(f"ChillOS target : {info['target']}")
-    print(f"Distribution   : Debian 13")
-    print(f"Backend        : PRoot")
+    print("╔════════════════════════════════════════╗")
+    print("║           CHILLOS ROOTFS STATUS        ║")
+    print("╚════════════════════════════════════════╝")
+    print()
 
-    if not check_proot_distro():
-        print("Installed      : NO")
-        return 1
+    print(f"Distribution : {DISTRO}")
+    print(f"Architecture : {architecture()}")
+    print(f"RootFS home  : {ROOTFS_DIR}")
+    print()
 
-    installed = container_exists()
+    if command_exists("proot"):
+        print("PRoot         : AVAILABLE")
+    else:
+        print("PRoot         : MISSING")
 
-    print(f"Installed      : {'YES' if installed else 'NO'}")
+    if proot_distro_available():
+        print("proot-distro  : AVAILABLE")
+    else:
+        print("proot-distro  : MISSING")
+
+    if distro_installed():
+        print("Debian        : INSTALLED")
+    else:
+        print("Debian        : NOT INSTALLED")
+
+    if rootfs_ready():
+        print("RootFS        : READY")
+    else:
+        print("RootFS        : NOT READY")
+
+    print()
+
+    if rootfs_ready():
+        print("Environment   : READY")
+    elif not proot_distro_available():
+        print("Environment   : MISSING DEPENDENCY")
+    else:
+        print("Environment   : NOT READY")
+
+    print()
+
+
+def remove():
+    print()
+    print("RootFS removal is intentionally disabled.")
+    print()
+    print("ChillOS will not automatically delete a Debian")
+    print("environment because that could destroy user data.")
+    print()
+    print("Use proot-distro directly if you intentionally")
+    print("want to remove the Debian environment.")
     print()
 
 
 def usage():
     print("""
+ChillOS RootFS
+
 Usage:
-  chill rootfs status
+
   chill rootfs build
+      Install the Debian RootFS.
+
+  chill rootfs status
+      Display RootFS and PRoot status.
+
+  chill rootfs update
+      Update Debian package metadata.
+
+  chill rootfs login
+      Enter the Debian environment.
+
+  chill rootfs remove
+      Display safe removal information.
 """)
 
 
-def main():
-    # Works both through:
-    #
-    #   chill rootfs build
-    #
-    # and directly:
-    #
-    #   python -m chill.rootfs build
+def main(args=None):
+    if args is None:
+        args = sys.argv[1:]
 
-    if len(sys.argv) >= 3 and sys.argv[1] == "rootfs":
-        command = sys.argv[2]
+    if not args:
+        status()
+        return 0
 
-    elif len(sys.argv) >= 2:
-        command = sys.argv[1]
+    command = args[0].lower()
 
-    else:
-        usage()
-        return 1
-
-    if command == "build":
-        return build()
+    if command in ("build", "install"):
+        return 0 if build() else 1
 
     if command == "status":
-        return status()
+        status()
+        return 0
+
+    if command == "update":
+        return 0 if update() else 1
+
+    if command in ("login", "start"):
+        return 0 if login() else 1
+
+    if command == "remove":
+        remove()
+        return 0
+
+    if command in ("help", "-h", "--help"):
+        usage()
+        return 0
 
     print(f"Unknown rootfs command: {command}")
     usage()
