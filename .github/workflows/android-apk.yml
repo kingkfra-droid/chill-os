@@ -1,118 +1,49 @@
-name: Build and Release ChillOS APK
+name: Build ChillOS APK
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  build-release:
-    name: Build and Release APK
+  build:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: android/ChillOS
-
     steps:
-      - name: Checkout ChillOS
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '21'
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK packages
+      - name: Install SDK
         run: |
-          sdkmanager "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;34.0.0"
-        working-directory: .
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
-        with:
-          gradle-version: '8.7'
-
-      - name: Read Android version
-        id: version
-        run: |
-          VERSION_NAME=$(grep -oP 'versionName\s*[= ]\s*["'\'']\K[^"'\'']+' app/build.gradle app/build.gradle.kts 2>/dev/null | head -1 || true)
-
-          if [ -z "$VERSION_NAME" ]; then
-            VERSION_NAME="0.1.0"
-          fi
-
-          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
-          echo "Detected ChillOS version: $VERSION_NAME"
-
-      - name: Build ChillOS APK
+      - name: Build ChillOS
+        working-directory: android/ChillOS
         run: gradle assembleDebug --no-daemon
 
-      - name: Version APK
-        id: apk
+      - name: Rename APK
         run: |
-          VERSION="${{ steps.version.outputs.version_name }}"
-          BUILD="${{ github.run_number }}"
-
-          APK_NAME="ChillOS-v${VERSION}-build.${BUILD}.apk"
-
           mkdir -p release
+          cp android/ChillOS/app/build/outputs/apk/debug/app-debug.apk \
+             release/ChillOS-debug.apk
 
-          APK_SOURCE=$(find app/build/outputs/apk/debug -type f -name "*.apk" | head -1)
-
-          if [ -z "$APK_SOURCE" ]; then
-            echo "ERROR: APK was not generated."
-            exit 1
-          fi
-
-          cp "$APK_SOURCE" "release/$APK_NAME"
-
-          echo "apk_name=$APK_NAME" >> "$GITHUB_OUTPUT"
-
-      - name: Generate SHA-256 checksum
+      - name: SHA256
         run: |
-          cd release
-          sha256sum "${{ steps.apk.outputs.apk_name }}" \
-            > "${{ steps.apk.outputs.apk_name }}.sha256"
+          sha256sum release/ChillOS-debug.apk \
+            > release/ChillOS-debug.apk.sha256
 
-          echo "SHA-256:"
-          cat "${{ steps.apk.outputs.apk_name }}.sha256"
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: "v${{ steps.version.outputs.version_name }}-build.${{ github.run_number }}"
-          name: "ChillOS v${{ steps.version.outputs.version_name }} — Build ${{ github.run_number }}"
-          body: |
-            # ChillOS APK
-
-            **Version:** ${{ steps.version.outputs.version_name }}
-            **Build:** ${{ github.run_number }}
-            **Commit:** `${{ github.sha }}`
-
-            ## Files
-
-            - Versioned debug APK
-            - SHA-256 checksum
-
-            ## Verification
-
-            ```bash
-            sha256sum -c *.sha256
-            ```
-
-            This is an automatically generated debug build.
-          files: |
-            android/ChillOS/release/${{ steps.apk.outputs.apk_name }}
-            android/ChillOS/release/${{ steps.apk.outputs.apk_name }}.sha256
-          generate_release_notes: true
+          name: ChillOS-debug
+          path: release/
