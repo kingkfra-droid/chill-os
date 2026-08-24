@@ -1,0 +1,7 @@
+com.kingkfra.chillos.app-pngs-0 /data/data/com.termux/files/home/ChillOS/android/ChillOS/app/build/generated/res/pngs/debug
+com.kingkfra.chillos.app-resValues-1 /data/data/com.termux/files/home/ChillOS/android/ChillOS/app/build/generated/res/resValues/debug
+com.kingkfra.chillos.app-packageDebugResources-2 /data/data/com.termux/files/home/ChillOS/android/ChillOS/app/build/intermediates/incremental/debug/packageDebugResources/merged.dir
+com.kingkfra.chillos.app-packageDebugResources-3 /data/data/com.termux/files/home/ChillOS/android/ChillOS/app/build/intermediates/incremental/debug/packageDebugResources/stripped.dir
+com.kingkfra.chillos.app-debug-4 /data/data/com.termux/files/home/ChillOS/android/ChillOS/app/build/intermediates/merged_res/debug/mergeDebugResources
+com.kingkfra.chillos.app-debug-5 /data/data/com.termux/files/home/ChillOS/android/ChillOS/app/src/debug/res
+com.kingkfra.chillos.app-main-6 /data/data/com.termux/files/home/ChillOS/android/ChillOS/app/src/main/res
